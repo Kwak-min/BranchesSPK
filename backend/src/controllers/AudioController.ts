@@ -1,12 +1,23 @@
 import { Request, Response } from 'express';
-import Audio from '../models/Audio';
+import Audio from '../models/Audio.js';
+import user from '../models/User.js';
+import User from '../models/User.js';
 
 // 오디오 파일 업로드
-export const uploadAudio = async (req: Request, res: Response) => {
+export const uploadAudio = 
+async (
+  req: Request, 
+  res: Response,
+  
+) => {
   try {
-    const { conversationId, userId } = req.body;
+    const { conversationId, userId, message} = req.body;
     const audioBuffer = req.file?.buffer;
 
+    const user = await User.findById(res.locals.jwtData.id)
+    if (!User) {
+      return res.status(401).json("사용자가 로그인을 하지 않았거나, 권한이 없습니다.")
+    }
     if (!audioBuffer || !userId || !conversationId) {
       return res.status(400).json({ error: '올바른 데이터를 제공해 주세요.' });
     }
@@ -29,7 +40,9 @@ export const uploadAudio = async (req: Request, res: Response) => {
 export const getAudio = async (req: Request, res: Response) => {
   try {
     const audio = await Audio.findById(req.params.id);
-
+    if (!User) {
+      return res.status(401).json("사용자가 로그인을 하지 않았거나, 권한이 없습니다.")
+    }
     if (!audio) {
       return res.status(404).json({ error: '오디오를 찾을 수 없습니다.' });
     }
@@ -47,6 +60,10 @@ export const handleVoiceMessage = async (req: Request, res: Response) => {
   try {
     const { conversationId } = req.params;
     const audioBuffer = req.file?.buffer;
+
+    if (!User) {
+      return res.status(401).json("사용자가 로그인을 하지 않았거나, 권한이 없습니다.")
+    }
 
     if (!audioBuffer || !conversationId) {
       return res.status(400).json({ error: '올바른 데이터를 제공해 주세요.' });
