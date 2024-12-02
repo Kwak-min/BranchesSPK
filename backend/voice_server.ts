@@ -1,11 +1,12 @@
 // server.ts
-import express, { Request } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import mongoose, { ConnectOptions } from 'mongoose';
 import multer from 'multer';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 const { Configuration, OpenAIApi } = require('openai');
+import User from '../backend/src/models/User.js';
 
 dotenv.config();
 
@@ -20,6 +21,19 @@ mongoose.connect(mongoUri, {
 } as ConnectOptions)
     .then(() => console.log("MongoDB 서버와 연결되었습니다"))
     .catch(err => console.error("MongoDB 연결 에러:", err));
+
+// 사용자 인증 미들웨어 추가
+const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const user = await User.findById(res.locals.jwtData.id);
+        if (!user) {
+            return res.status(401).json("사용자가 로그인을 하지 않았거나, 권한이 없습니다.");
+        }
+        next();
+    } catch (error) {
+        return res.status(401).json("인증 오류가 발생했습니다.");
+    }
+};
 
 // Multer 설정
 const upload = multer({ dest: 'uploads/' });
